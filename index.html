@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="su" class="scroll-smooth">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tolombong Carpon</title>
+  <link rel="manifest" href="manifest.json">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+  <header class="sticky top-0 z-30 backdrop-blur bg-white/60 dark:bg-gray-900/60 border-b border-gray-200 dark:border-gray-800">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+      <a href="#/" class="flex items-center gap-3 text-lg font-semibold text-rose-600">Tolombong Carpon</a>
+      <nav class="flex items-center gap-3">
+        <button id="themeToggle" class="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-800 transition"><span id="themeIcon">🌙</span></button>
+        <a href="#/" class="px-3 py-2">Tepas</a>
+        <a href="#/about" class="px-3 py-2">Ngeunaan</a>
+      </nav>
+    </div>
+  </header>
+  <main class="max-w-5xl mx-auto px-4 py-8" id="app"></main>
+  <footer class="max-w-5xl mx-auto px-4 py-8 text-sm text-gray-600 dark:text-gray-400">
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-2">
+      <div>© <span id="year"></span> Tolombong Carpon.</div>
+      <div class="text-xs">Desain basajan • Mode poék aya</div>
+    </div>
+  </footer>
+
+  <!-- Reader Panel -->
+  <div id="readerPanel" class="fixed inset-0 z-40 hidden items-center justify-center p-6">
+    <div id="readerBackdrop" class="absolute inset-0 bg-black/50"></div>
+    <article class="relative z-10 max-w-3xl w-full bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-auto" style="max-height:90vh;">
+      <header class="flex items-start justify-between p-6 border-b border-gray-100 dark:border-gray-700">
+        <div>
+          <h2 id="readerTitle" class="text-2xl font-semibold"></h2>
+          <p id="readerMeta" class="text-sm text-gray-500 dark:text-gray-400 mt-1"></p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="prevBtn" class="px-3 py-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">Saméméhna</button>
+          <button id="nextBtn" class="px-3 py-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">Salajengna</button>
+          <button id="closeReader" class="px-3 py-1 rounded-md bg-gray-100 dark:bg-gray-700">Tutup</button>
+        </div>
+      </header>
+      <div class="p-6 prose dark:prose-invert prose-lg" id="readerContent"></div>
+      <section class="p-6 border-t border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold mb-3">Rating</h3>
+        <div id="ratingStars" class="flex gap-1 text-2xl cursor-pointer mb-4"></div>
+        <p id="ratingResult" class="text-sm text-gray-500"></p>
+      </section>
+      <section class="p-6 border-t border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold mb-3">Koméntar</h3>
+        <div id="commentList" class="space-y-3 mb-4 text-sm"></div>
+        <form id="commentForm" class="flex gap-2">
+          <input type="text" id="commentInput" placeholder="Tulis koméntar..." class="flex-1 border rounded-md px-3 py-2 dark:bg-gray-900" required>
+          <button type="submit" class="px-3 py-2 bg-rose-500 text-white rounded-md">Kirim</button>
+        </form>
+      </section>
+      <section class="p-6 border-t border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold mb-3">Bagikeun</h3>
+        <div class="flex gap-3">
+          <button id="shareBtn" class="px-3 py-2 bg-blue-500 text-white rounded-md">Bagikeun</button>
+        </div>
+      </section>
+    </article>
+  </div>
+
+  <script>
+    const STORIES = [
+      { id: '1', title: 'Sapeuting di Saung', excerpt: 'Carita pondok ngeunaan obrolan sederhana di saung heubeul.', date: '2025-09-25', content: `<p>Di saung anu geus remen...</p>` },
+      { id: '2', title: 'Payung Hideung di Pasar', excerpt: 'Payung hideung ngantunkeun kesan di tengah pasar beueus.', date: '2025-08-11', content: `<p>Di pasar anu rame...</p>` }
+    ];
+    const COMMENTS = {}; const RATINGS = {};
+    const $ = (s,r=document)=>r.querySelector(s);
+    const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
+    $('#year').textContent = new Date().getFullYear();
+
+    // Theme
+    const themeToggle=$('#themeToggle'); const themeIcon=$('#themeIcon');
+    function applyTheme(t){ if(t==='dark')document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); themeIcon.textContent=t==='dark'?'☀️':'🌙'; }
+    const savedTheme=localStorage.getItem('cp_theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+    applyTheme(savedTheme);
+    themeToggle.addEventListener('click',()=>{const now=document.documentElement.classList.contains('dark')?'dark':'light';const next=now==='dark'?'light':'dark';applyTheme(next);localStorage.setItem('cp_theme',next);});
+
+    const app=$('#app');
+    function renderHome(){app.innerHTML=`<h1 class="text-3xl font-bold mb-4">Kumpulan Carpon</h1><section id="storyGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></section>`;renderStoryCards();}
+    function renderStoryCards(){const grid=$('#storyGrid');grid.innerHTML=STORIES.map(s=>`<article class="bg-white dark:bg-gray-800 border rounded-lg p-4 card" data-id="${s.id}"><h3 class="font-semibold text-lg mb-1">${s.title}</h3><p class="text-sm">${s.excerpt}</p><button class="mt-2 readBtn px-3 py-1 rounded-md bg-rose-500 text-white">Baca</button></article>`).join('');$$('.card').forEach(card=>card.addEventListener('click',(e)=>{const id=card.getAttribute('data-id');if(e.target.closest('button')) location.hash=`#/story-${id}`}));}
+    function renderAbout(){app.innerHTML=`<h1 class="text-3xl font-bold mb-4">Ngeunaan Panulis</h1><p>Kuring panulis carpon...</p>`;}
+
+    const readerPanel=$('#readerPanel'); const readerTitle=$('#readerTitle'); const readerMeta=$('#readerMeta'); const readerContent=$('#readerContent'); const closeReader=$('#closeReader'); const nextBtn=$('#nextBtn'); const prevBtn=$('#prevBtn'); const commentList=$('#commentList'); const commentForm=$('#commentForm'); const commentInput=$('#commentInput'); const ratingStars=$('#ratingStars'); const ratingResult=$('#ratingResult'); const shareBtn=$('#shareBtn');
+    let currentStoryIndex=-1;
+    function openReaderById(id){const idx=STORIES.findIndex(s=>s.id===id);if(idx===-1)return;currentStoryIndex=idx;showStoryAtIndex(idx);readerPanel.classList.remove('hidden');document.body.style.overflow='hidden';}
+    function closeReaderPanel(){readerPanel.classList.add('hidden');document.body.style.overflow='';if(location.hash.startsWith('#/story-')) location.hash='#/';}
+    function showStoryAtIndex(idx){const s=STORIES[idx];readerTitle.textContent=s.title;readerMeta.textContent=s.date;readerContent.innerHTML=s.content;renderComments(s.id);renderRating(s.id);setupShare(s);history.replaceState(null,'',`#/story-${s.id}`);prevBtn.disabled=idx<=0;nextBtn.disabled=idx>=STORIES.length-1;}
+    closeReader.addEventListener('click',closeReaderPanel);nextBtn.addEventListener('click',()=>{if(currentStoryIndex<STORIES.length-1){currentStoryIndex++;showStoryAtIndex(currentStoryIndex);}});prevBtn.addEventListener('click',()=>{if(currentStoryIndex>0){currentStoryIndex--;showStoryAtIndex(currentStoryIndex);}});
+
+    function renderComments(storyId){const list=COMMENTS[storyId]||[];commentList.innerHTML=list.map(c=>`<div class="p-2 bg-gray-100 dark:bg-gray-700 rounded">${c}</div>`).join('')||'<p class="text-gray-500">Teu acan aya koméntar.</p>';commentForm.onsubmit=(e)=>{e.preventDefault();const txt=commentInput.value.trim();if(!txt)return;if(!COMMENTS[storyId])COMMENTS[storyId]=[];COMMENTS[storyId].push(txt);commentInput.value='';renderComments(storyId);};}
+    function renderRating(storyId){ratingStars.innerHTML='';for(let i=1;i<=5;i++){const star=document.createElement('span');star.textContent='★';star.style.cursor='pointer';star.style.color=(RATINGS[storyId]&&average(RATINGS[storyId])>=i)?'gold':'gray';star.onclick=()=>{if(!RATINGS[storyId])RATINGS[storyId]=[];RATINGS[storyId].push(i);renderRating(storyId);};ratingStars.appendChild(star);}const avg=RATINGS[storyId]?average(RATINGS[storyId]).toFixed(1):'0';ratingResult.textContent=`Rata-rata: ${avg} / 5`; }
+    function average(arr){return arr.reduce((a,b)=>a+b,0)/arr.length;}
+    function setupShare(story){shareBtn.onclick=()=>{const url=location.href;if(navigator.share){navigator.share({title:story.title,text:'Maca carpon ieu!',url});}else{alert('Salin URL: '+url);}};}
+    function router(){const hash=location.hash||'#/' ;if(hash.startsWith('#/story-')){const id=hash.replace('#/story-','');openReaderById(id);}else if(hash==='#/about'){readerPanel.classList.add('hidden');renderAbout();}else{readerPanel.classList.add('hidden');renderHome();}}window.addEventListener('hashchange',router);window.addEventListener('load',router);
+  </script>
+</body>
+</html>
